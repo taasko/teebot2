@@ -58,7 +58,7 @@ class Teebot {
     this.teeworlds = new Teeworlds();
     this.ai = new AI();
 
-    this.teeworlds.client.on("game.start", (e) => {
+    this.teeworlds.client.on("game.start", () => {
       if (Date.now() - this.state.currentMatch.startTime < 10000) {
         // Don't count warm up as new match.
         return;
