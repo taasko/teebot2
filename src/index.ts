@@ -9,13 +9,17 @@ const enum Channel {
   Blue = "BLUE",
 }
 
+type TeeworldsPlayer = {
+  kills: number;
+  katana_pickups: number;
+  flag_captures: number;
+  flag_grabs: number;
+};
 type TeeworldsMatch = {
   startTime: number;
-  flag_captures: { [playerName: string]: number };
-  flag_grabs: { [playerName: string]: number };
-  kills: { [playerName: string]: number };
-  katana_pickups: { [playerName: string]: number };
-  killsArray: any[];
+  players: {
+    [playerName: string]: TeeworldsPlayer;
+  };
 };
 type TeebotState = {
   fridaymode: boolean;
@@ -26,20 +30,27 @@ type TeamID = 0 | 1 | 3;
 const CHANNEL_MAPPING = { 0: Channel.Red, 1: Channel.Blue, 3: Channel.General };
 const aiStatPrompt =
   "Peli on nimeltään Teeworlds." +
-  "Annan sinulle JSON-muotoisen statistiikan yhdestä kierroksesta." +
-  "Anna minulle mahdollisimman tiivistetty analyysi tästä aineistoista." +
-  "Erityisesti kiinnostaa yksittäisten pelaajien merkittävimmät teot." +
-  "Statistiikka sisältää nämä toiminnot: lipun nosto (flag_grabs), lipun palautus (flag_captures), tapot (killsArray) ja katanan nosto (katana_pickups)." +
+  "Annan sinulle JSON-muotoisen aineiston yhdestä kierroksesta." +
+  "Aineisto sisältää nämä toiminnot per pelaaja: 1. lipun nostot (flag_grabs), 2. lipun valloitukset (flag_captures), 3. tapot (kills) ja 4. katanan nosto (katana_pickups)." +
+  "Anna minulle analyysi tästä aineistoista, joka on mieluiten mahdollisimman lyhyt." +
+  "Erityistermi jota voi käyttää tarvittaessa on 'tumputus', joka tarkoittaa sitä kun pelaaja on nostanut lipun todella monta kertaa mutta ei ole saanut lippua valloitettua." +
+  "Kerro ainakin kierroksen arvokkain pelaaja (MVP), eli joku joka on valloittanut todella monta lippua tai tappanut poikkeuksellisen paljon muita pelaajia." +
+  "Tämän lisäksi kerro kaksi muuta mielenkiintoisia havaintoja aineiston perusteella." +
   "Tässä aineisto: ";
 
 function getInitialMatch(): TeeworldsMatch {
   return {
     startTime: Date.now(),
-    flag_captures: {},
-    flag_grabs: {},
-    kills: {},
-    katana_pickups: {},
-    killsArray: [],
+    players: {},
+  };
+}
+
+function getInitialPlayer(): TeeworldsPlayer {
+  return {
+    flag_captures: 0,
+    flag_grabs: 0,
+    kills: 0,
+    katana_pickups: 0,
   };
 }
 
@@ -58,71 +69,83 @@ class Teebot {
     this.teeworlds = new Teeworlds();
     this.ai = new AI();
 
-    this.teeworlds.client.on("game.start", () => {
+    this.teeworlds.client.on("game.start", async () => {
       if (Date.now() - this.state.currentMatch.startTime < 10000) {
         // Don't count warm up as new match.
         return;
       }
 
-      wait(3000).then(() => {
-        const stats = JSON.stringify(this.state.currentMatch);
+      await wait(1000);
 
-        this.ai
-          .ask(aiStatPrompt + stats)
-          .then((response) => {
-            if (!response) {
-              throw Error("No AI response.");
-            }
+      const stats = JSON.stringify(this.state.currentMatch);
 
-            const arr = response.match(/.{1,64}/g);
+      console.log(stats);
 
-            if (arr) {
-              arr.forEach((s) => {
-                this.teeworlds.client.send("say " + s);
-              });
-            }
-          })
-          .catch(() => {
-            this.teeworlds.client.send(
-              "broadcast Viime matsin statsit: " + stats
-            );
-          });
+      let aiResponse: string = "AI failed.";
 
-        this.state.currentMatch = {
-          ...getInitialMatch(),
-          startTime: Date.now(),
-        };
-      });
+      try {
+        const res = await this.ai.ask(aiStatPrompt + stats);
+
+        if (res) {
+          aiResponse = res;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      console.log(aiResponse);
+
+      const periodIndex = aiResponse
+        .split("")
+        .findIndex((char) => char === ".");
+      const firstSentence = aiResponse.slice(0, periodIndex + 1);
+
+      // Print first sentence to Teeworlds chat.
+      try {
+        await this.teeworlds.client.send("say " + firstSentence);
+      } catch (e) {
+        console.error(e);
+      }
+
+      // Print full message to Discord.
+      try {
+        await this.discord.send(Channel.General, aiResponse);
+      } catch (e) {
+        console.error(e);
+      }
+
+      this.state.currentMatch = {
+        ...getInitialMatch(),
+        startTime: Date.now(),
+      };
     });
 
     this.teeworlds.client.on("game.flag_grab", (e) => {
-      if (this.state.currentMatch.flag_grabs[e.clientName]) {
-        this.state.currentMatch.flag_grabs[e.clientName]++;
-      } else {
-        this.state.currentMatch.flag_grabs[e.clientName] = 1;
-      }
+      this.createPlayerFromEvent(e);
+
+      this.state.currentMatch.players[e.clientName].flag_grabs++;
     });
 
     this.teeworlds.client.on("game.flag_capture", (e) => {
-      if (this.state.currentMatch.flag_captures[e.clientName]) {
-        this.state.currentMatch.flag_captures[e.clientName]++;
-      } else {
-        this.state.currentMatch.flag_captures[e.clientName] = 1;
-      }
+      this.createPlayerFromEvent(e);
+
+      this.state.currentMatch.players[e.clientName].flag_captures++;
     });
 
     this.teeworlds.client.on("game.kill", (e) => {
-      console.log(e);
-      this.state.currentMatch.killsArray.push(e);
+      // Don't count suicides.
+      if (e.clientId === e.victimId) return;
+
+      this.createPlayerFromEvent(e);
+
+      this.state.currentMatch.players[e.clientName].kills++;
     });
 
     this.teeworlds.client.on("game.pickup", (e) => {
       if (e.itemId === 5) {
-        if (this.state.currentMatch.katana_pickups[e.clientName]) {
-          this.state.currentMatch.katana_pickups[e.clientName]++;
-        } else {
-          this.state.currentMatch.katana_pickups[e.clientName] = 1;
-        }
+        this.createPlayerFromEvent(e);
+
+        this.state.currentMatch.players[e.clientName].katana_pickups++;
       }
     });
 
@@ -165,6 +188,12 @@ class Teebot {
         this.state.fridaymode = false;
         return `broadcast fridaymode disabled`;
     }
+  }
+
+  createPlayerFromEvent(e: { clientName: string }): void {
+    if (this.state.currentMatch.players[e.clientName]) return;
+
+    this.state.currentMatch.players[e.clientName] = getInitialPlayer();
   }
 
   async changeTeam(playerName: string, teamId: TeamID): Promise<void> {

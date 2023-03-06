@@ -1,6 +1,7 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 import {
+  ChannelType,
   Client,
   Collection,
   GatewayIntentBits,
@@ -35,10 +36,20 @@ export class Discord {
     });
   }
 
-  get channels() {
+  get voiceChannels() {
     if (!this.currentGuild) return;
 
-    return this.currentGuild.channels.cache.filter((c) => c.type === 2); // Only voice channels.
+    return this.currentGuild.channels.cache.filter(
+      (c) => c.type === ChannelType.GuildVoice
+    );
+  }
+
+  get textChannels() {
+    if (!this.currentGuild) return;
+
+    return this.currentGuild.channels.cache.filter(
+      (c) => c.type === ChannelType.GuildText
+    );
   }
 
   async getMembers(): Promise<Collection<string, GuildMember> | undefined> {
@@ -69,9 +80,9 @@ export class Discord {
   }
 
   getChannelByName(name: string) {
-    if (!this.channels) return;
+    if (!this.voiceChannels) return;
 
-    return this.channels.find((c) => c.name.includes(name));
+    return this.voiceChannels.find((c) => c.name.includes(name));
   }
 
   async setChannelForMember(
@@ -95,5 +106,14 @@ export class Discord {
     if (!members) return;
 
     members.forEach((m) => m.voice.setChannel(channelId).catch(console.error));
+  }
+
+  send(channelName: string, text: string) {
+    const textChannels = this.textChannels;
+    if (!textChannels) return;
+
+    const channels = textChannels.find((c) => c.name === channelName);
+    // @ts-ignore
+    channels.send(text);
   }
 }
