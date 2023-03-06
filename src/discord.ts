@@ -2,6 +2,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import {
   Client,
+  Collection,
   GatewayIntentBits,
   Guild,
   GuildMember,
@@ -34,22 +35,32 @@ export class Discord {
     });
   }
 
-  get members() {
-    if (!this.currentGuild) return;
-
-    return this.currentGuild.members.cache.filter((m) => !m.user.bot);
-  }
-
   get channels() {
     if (!this.currentGuild) return;
 
     return this.currentGuild.channels.cache.filter((c) => c.type === 2); // Only voice channels.
   }
 
-  getMemberByName(name: string) {
-    if (!this.members) return;
+  async getMembers(): Promise<Collection<string, GuildMember> | undefined> {
+    if (!this.currentGuild) return;
 
-    return this.members.find(
+    try {
+      const members = await this.currentGuild.members.fetch({ force: true });
+
+      return members.filter((m) => !m.user.bot);
+    } catch (e) {
+      console.error(e);
+    }
+
+    return;
+  }
+
+  async getMemberByName(name: string): Promise<GuildMember | undefined> {
+    const members = await this.getMembers();
+
+    if (!members) return;
+
+    return members.find(
       (m) =>
         (m.nickname && m.nickname.toLowerCase() === name.toLowerCase()) ||
         m.displayName.toLowerCase() === name.toLowerCase() ||
@@ -76,9 +87,13 @@ export class Discord {
     }
   }
 
-  setChannelForAllMembers(channelId: GuildVoiceChannelResolvable) {
-    if (!this.members) return;
+  async setChannelForAllMembers(
+    channelId: GuildVoiceChannelResolvable
+  ): Promise<void> {
+    const members = await this.getMembers();
 
-    this.members.forEach((m) => m.voice.setChannel(channelId));
+    if (!members) return;
+
+    members.forEach((m) => m.voice.setChannel(channelId).catch(console.error));
   }
 }

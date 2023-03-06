@@ -3,6 +3,12 @@ import { Teeworlds } from "./teeworlds";
 import { wait } from "./util";
 import { AI } from "./ai";
 
+const enum Channel {
+  General = "general",
+  Red = "RED",
+  Blue = "BLUE",
+}
+
 type TeeworldsMatch = {
   startTime: number;
   flag_captures: { [playerName: string]: number };
@@ -17,7 +23,7 @@ type TeebotState = {
 };
 type TeamID = 0 | 1 | 3;
 
-const CHANNEL_MAPPING = { 0: "RED", 1: "BLUE", 3: "general" };
+const CHANNEL_MAPPING = { 0: Channel.Red, 1: Channel.Blue, 3: Channel.General };
 const aiStatPrompt =
   "Peli on nimeltään Teeworlds." +
   "Annan sinulle JSON-muotoisen statistiikan yhdestä kierroksesta." +
@@ -161,21 +167,21 @@ class Teebot {
     }
   }
 
-  async changeTeam(playerName: string, teamId: TeamID) {
+  async changeTeam(playerName: string, teamId: TeamID): Promise<void> {
     const channel = this.discord.getChannelByName(CHANNEL_MAPPING[teamId]);
     if (!channel) return;
 
-    const member = this.discord.getMemberByName(playerName);
+    const member = await this.discord.getMemberByName(playerName);
     if (!member) return;
 
     return this.discord.setChannelForMember(member, channel.id);
   }
 
-  async moveAllMembersToGeneral() {
-    const channel = this.discord.getChannelByName("general");
+  async moveAllMembersToGeneral(): Promise<void> {
+    const channel = this.discord.getChannelByName(Channel.General);
     if (!channel) return;
 
-    this.discord.setChannelForAllMembers(channel.id);
+    return this.discord.setChannelForAllMembers(channel.id);
   }
 }
 
