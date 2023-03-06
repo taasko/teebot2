@@ -19,7 +19,9 @@ export class Discord {
       throw Error("Discord configurations missing.");
     }
 
-    this.client = new Client({ intents: [GatewayIntentBits.Guilds] });
+    this.client = new Client({
+      intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
+    });
 
     this.client.login(DISCORD_TOKEN);
 
