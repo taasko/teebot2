@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "rimraf build && tsc-watch --onSuccess 'node .'",
     "build": "rimraf build && tsc",
+    "run": "npm run build && npx nodemon .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Taavi S.",
