@@ -35,7 +35,7 @@ const aiStatPrompt =
   "Anna minulle analyysi tästä aineistoista, joka on mieluiten mahdollisimman lyhyt." +
   "Erityistermi jota voi käyttää tarvittaessa on 'tumputus', joka tarkoittaa sitä kun pelaaja on nostanut lipun todella monta kertaa mutta ei ole saanut lippua valloitettua." +
   "Kerro ainakin kierroksen arvokkain pelaaja (MVP), eli joku joka on valloittanut todella monta lippua tai tappanut poikkeuksellisen paljon muita pelaajia." +
-  "Tämän lisäksi kerro kaksi muuta mielenkiintoisia havaintoja aineiston perusteella." +
+  "Tämän lisäksi kerro kaksi muuta mielenkiintoista havaintoa aineiston perusteella." +
   "Tässä aineisto: ";
 
 function getInitialMatch(): TeeworldsMatch {
