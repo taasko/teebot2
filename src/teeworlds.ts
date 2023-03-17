@@ -2,6 +2,22 @@ import * as dotenv from "dotenv";
 dotenv.config();
 import * as TeeworldsEcon from "teeworlds-econ/build/TwEconClient";
 
+export type TeeworldsPlayer = {
+  kills: number;
+  deaths: number;
+  suicides: number;
+  katana_pickups: number;
+  flag_captures: number;
+  flag_grabs: number;
+};
+
+export type TeeworldsMatch = {
+  startTime: number;
+  players: {
+    [playerName: string]: TeeworldsPlayer;
+  };
+};
+
 export class Teeworlds {
   client;
 

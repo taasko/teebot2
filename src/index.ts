@@ -1,5 +1,5 @@
 import { Discord } from "./discord";
-import { Teeworlds } from "./teeworlds";
+import { Teeworlds, TeeworldsMatch, TeeworldsPlayer } from "./teeworlds";
 import { wait } from "./util";
 import { AI } from "./ai";
 
@@ -9,18 +9,6 @@ const enum Channel {
   Blue = "BLUE",
 }
 
-type TeeworldsPlayer = {
-  kills: number;
-  katana_pickups: number;
-  flag_captures: number;
-  flag_grabs: number;
-};
-type TeeworldsMatch = {
-  startTime: number;
-  players: {
-    [playerName: string]: TeeworldsPlayer;
-  };
-};
 type TeebotState = {
   fridaymode: boolean;
   currentMatch: TeeworldsMatch;
@@ -50,6 +38,8 @@ function getInitialPlayer(): TeeworldsPlayer {
     flag_captures: 0,
     flag_grabs: 0,
     kills: 0,
+    deaths: 0,
+    suicides: 0,
     katana_pickups: 0,
   };
 }
@@ -140,7 +130,16 @@ class Teebot {
 
       this.createPlayerFromEvent(e);
 
-      this.state.currentMatch.players[e.clientName].kills++;
+      // Victim gets always one death.
+      this.state.currentMatch.players[e.victimName].deaths++;
+
+      if (e.clientName === e.victimName) {
+        // If killer same as victim, add suicide.
+        this.state.currentMatch.players[e.clientName].suicides++;
+      } else {
+        // Otherwise it's kill.
+        this.state.currentMatch.players[e.clientName].kills++;
+      }
     });
 
     this.teeworlds.client.on("game.pickup", (e) => {
