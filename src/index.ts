@@ -67,15 +67,17 @@ class Teebot {
 
       await wait(1000);
 
-      const stats = JSON.stringify(this.state.currentMatch);
+      // Send highlights to Teeworlds chat.
+      this.teeworlds
+        .getMatchHighlights(this.state.currentMatch)
+        .forEach((h) => this.teeworlds.client.send("say " + h));
 
-      console.log(stats);
+      const stats = JSON.stringify(this.state.currentMatch);
 
       let aiResponse: string = "AI failed.";
 
       try {
         const res = await this.ai.ask(aiStatPrompt + stats);
-
         if (res) {
           aiResponse = res;
         }
@@ -83,7 +85,9 @@ class Teebot {
         console.error(e);
       }
 
-      console.log(aiResponse);
+      const matchReport = this.teeworlds.getMatchReport(
+        this.state.currentMatch
+      );
 
       const periodIndex = aiResponse
         .split("")
@@ -99,7 +103,10 @@ class Teebot {
 
       // Print full message to Discord.
       try {
-        await this.discord.send(Channel.General, aiResponse);
+        await this.discord.send(
+          Channel.General,
+          matchReport + "\n" + "GPT analyze:\n" + aiResponse
+        );
       } catch (e) {
         console.error(e);
       }
@@ -122,6 +129,12 @@ class Teebot {
       this.state.currentMatch.players[e.clientName].flag_captures++;
     });
 
+    /**
+     * @TODO Ideas:
+     *    - Killing spree: Tulis suoraan yleisenä messagena nimi ja tappojen määrä kun on 4+ tappoa, jokasesta taposta
+     *    - Off screen kill
+     *    - Double, triple kills
+     */
     this.teeworlds.client.on("game.kill", (e) => {
       // TODO: Fix econ
       // Remove id from names. Only this event has ids.
