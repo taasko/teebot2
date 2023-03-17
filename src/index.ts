@@ -133,8 +133,10 @@ class Teebot {
     });
 
     this.teeworlds.client.on("game.kill", (e) => {
-      // Don't count suicides.
-      if (e.clientId === e.victimId) return;
+      // TODO: Fix econ
+      // Remove id from names. Only this event has ids.
+      e.victimName = e.victimName.substring(2);
+      e.clientName = e.clientName.substring(2);
 
       this.createPlayerFromEvent(e);
 
