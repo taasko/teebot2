@@ -191,10 +191,14 @@ class Teebot {
     }
   }
 
-  createPlayerFromEvent(e: { clientName: string }): void {
-    if (this.state.currentMatch.players[e.clientName]) return;
+  createPlayerFromEvent(e: { clientName: string; victimName?: string }): void {
+    if (!this.state.currentMatch.players[e.clientName]) {
+      this.state.currentMatch.players[e.clientName] = getInitialPlayer();
+    }
 
-    this.state.currentMatch.players[e.clientName] = getInitialPlayer();
+    if (e.victimName && !this.state.currentMatch.players[e.victimName]) {
+      this.state.currentMatch.players[e.victimName] = getInitialPlayer();
+    }
   }
 
   async changeTeam(playerName: string, teamId: TeamID): Promise<void> {
