@@ -19,10 +19,10 @@ const CHANNEL_MAPPING = { 0: Channel.Red, 1: Channel.Blue, 3: Channel.General };
 const aiStatPrompt =
   "Peli on nimeltään Teeworlds." +
   "Annan sinulle JSON-muotoisen aineiston yhdestä kierroksesta." +
-  "Aineisto sisältää nämä toiminnot per pelaaja: 1. lipun nostot (flag_grabs), 2. lipun valloitukset (flag_captures), 3. tapot (kills) ja 4. katanan nosto (katana_pickups)." +
-  "Anna minulle analyysi tästä aineistoista, joka on mieluiten mahdollisimman lyhyt." +
-  "Erityistermi jota voi käyttää tarvittaessa on 'tumputus', joka tarkoittaa sitä kun pelaaja on nostanut lipun todella monta kertaa mutta ei ole saanut lippua valloitettua." +
-  "Kerro ainakin kierroksen arvokkain pelaaja (MVP), eli joku joka on valloittanut todella monta lippua tai tappanut poikkeuksellisen paljon muita pelaajia." +
+  "Aineisto sisältää nämä seuraavat toiminnot per pelaaja: 1. lipun nostot (flag_grabs), 2. lipun valloitukset (flag_captures), 3. tapot (kills), 4. kuolemat (deaths), 5. itsemurhat (suicides) ja 6. katanan nosto (katana_pickups)." +
+  "Anna minulle analyysi tästä aineistoista, joka on mieluiten mahdollisimman lyhyt ja tiivis." +
+  "Erityistermi jota voi käyttää tarvittaessa on tumputus, joka tarkoittaa sitä kun pelaaja on nostanut lipun todella monta kertaa mutta ei ole saanut lippua valloitettua." +
+  "Kerro ainakin kierroksen arvokkain pelaaja (MVP), eli pelaaja joka on valloittanut todella monta lippua tai tappanut poikkeuksellisen paljon muita pelaajia." +
   "Tämän lisäksi kerro kaksi muuta mielenkiintoista havaintoa aineiston perusteella." +
   "Tässä aineisto: ";
 
